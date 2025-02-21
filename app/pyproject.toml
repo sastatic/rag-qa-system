@@ -1,0 +1,18 @@
+[project]
+name = "app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.14.1",
+    "dynaconf>=3.2.10",
+    "fastapi[standard]>=0.115.8",
+    "psycopg2-binary>=2.9.10",
+    "python-dotenv>=1.0.1",
+    "python-json-logger>=3.2.1",
+    "python-ulid>=3.0.0",
+    "pyyaml>=6.0.2",
+    "sqlalchemy>=2.0.38",
+    "uvicorn>=0.34.0",
+]
