@@ -1,6 +1,7 @@
+# docker/docker-compose.yml
 services:
   database:
-    image: postgres:13
+    image: pgvector/pgvector:pg15
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -11,6 +12,31 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["python", "worker.py"]
+    depends_on:
+      - database
+      - redis
+    volumes:
+      - ../app:/app:ro
+    env_file:
+      - ../.env
+
   app:
     build:
       context: ..
@@ -19,10 +45,14 @@ services:
       - "8000:8000"
     depends_on:
       - database
+      - ollama
     env_file:
       - ../.env
-    # command: ["--host", "0.0.0.0", "--port", "8000", "--workers", "$UVICORN_WORKER_COUNT"]
-    command: ["--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - ../app:/app:ro
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
 
 volumes:
   pgdata:
+  ollama_data:

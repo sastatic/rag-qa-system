@@ -6,17 +6,18 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 # Add your app folder to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "app"))
 
 # Import your centralized configuration
-from common.config import DATABASE_URL # type: ignore
-from database import Base # type: ignore
-from database.models import * # type: ignore
+from common.config import DATABASE_URL  # type: ignore
+from database import Base  # type: ignore
+from database.models import *  # type: ignore
 
 config = context.config
 fileConfig(config.config_file_name)
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 target_metadata = Base.metadata
+
 
 def run_migrations_offline():
     url = config.get_main_option("sqlalchemy.url")

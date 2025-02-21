@@ -6,6 +6,10 @@ dist/
 wheels/
 *.egg-info
 
+# IDE generated files
+.DS_Store
+.idea
+
 # Virtual environments
 .venv
 

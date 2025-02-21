@@ -1,46 +1,37 @@
-import os
-import shutil
-from fastapi import APIRouter, UploadFile, File, Form, BackgroundTasks, HTTPException, Depends
+# app/api/documents.py
+
+from fastapi import APIRouter, UploadFile, File, Depends, Form
+from typing import List, Optional
 from sqlalchemy.orm import Session
-from ulid import ULID
-from database.models.document import Document, DocumentStatus
 from database.session import get_db
+from repositories.document_repository import DocumentRepository
+from services.document_service import DocumentService
 
 router = APIRouter()
 
-def save_file(file: UploadFile, destination: str):
-    with open(destination, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+def get_document_service(db: Session = Depends(get_db)):
+    return DocumentService(db)
 
-@router.post("/", summary="Ingest a new document")
+@router.post("/", summary="Ingest new documents")
 async def ingest_document(
-    title: str = Form(...),
-    file: UploadFile = File(...),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
-    db: Session = Depends(get_db)
+    files: List[UploadFile] = File(...),
+    callback_url: Optional[str] = Form(None),
+    service: DocumentService = Depends(get_document_service)
 ):
-    uploads_dir = "uploads"
-    os.makedirs(uploads_dir, exist_ok=True)
-    file_location = os.path.join(uploads_dir, file.filename)
-    background_tasks.add_task(save_file, file, file_location)
-
-    new_doc = Document(
-        id=str(ULID()),
-        title=title,
-        content_url=file_location,
-        status=DocumentStatus.PENDING.value,
-    )
-    db.add(new_doc)
-    db.commit()
-    db.refresh(new_doc)
+    request_id, uploaded_files = await service.ingest_documents(files, callback_url)
     return {
-        "document_id": new_doc.id,
-        "title": new_doc.title,
-        "content_url": new_doc.content_url,
-        "status": new_doc.status
+        "request_id": request_id,
+        "message": f"Successfully queued {len(files)} documents for processing",
+        "files": uploaded_files,
     }
 
-@router.get("/", summary="List all documents")
-def list_documents(db: Session = Depends(get_db)):
-    documents = db.query(Document).all()
-    return documents
+@router.get("/", summary="Get all documents")
+async def get_all_documents(db: Session = Depends(get_db)) -> List[dict]:
+    documents = DocumentRepository(db).get_all_documents()
+    response = []
+    for doc in documents:
+        response.append({
+            "id": doc.id,
+            "file_name": doc.title,
+        })
+    return response
