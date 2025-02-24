@@ -4,7 +4,7 @@ from typing import List
 
 class Question(BaseModel):
     query: str = Field(..., min_length=1)
-    selected_document: List[str]|None = None
+    selected_document: List[str] | None = None
 
 
 class Answer(BaseModel):

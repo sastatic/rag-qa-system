@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 logger = get_logger("main_server")
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     health_checker = ServiceHealthChecker()
@@ -15,6 +16,7 @@ async def lifespan(app: FastAPI):
     await health_checker.perform_health_checks()
     logger.info("All services are healthy. Starting application.")
     yield
+
 
 app = FastAPI(title="RAG Q&A System", lifespan=lifespan)
 

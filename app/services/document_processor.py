@@ -16,6 +16,7 @@ from repositories.document_repository import DocumentRepository
 
 logger = get_logger(__name__)
 
+
 class DocumentProcessor:
     def __init__(self, db, s3_client, embed_model, file_extractor: dict):
         self.db = db
@@ -37,7 +38,9 @@ class DocumentProcessor:
                     json={
                         "status": document.status,
                         "file_name": document.title,
-                        "processed_at": document.updated_at.isoformat() if document.updated_at else None,
+                        "processed_at": document.updated_at.isoformat()
+                        if document.updated_at
+                        else None,
                     },
                 )
                 response.raise_for_status()
@@ -59,12 +62,16 @@ class DocumentProcessor:
         try:
             with open(file_path, "wb") as f:
                 self.s3_client.download_fileobj(BUCKET_RAGQA, document.s3_key, f)
-            reader = SimpleDirectoryReader(download_dir, file_extractor=self.file_extractor)
+            reader = SimpleDirectoryReader(
+                download_dir, file_extractor=self.file_extractor
+            )
             docs = await reader.aload_data()
             logger.info("Downloaded and extracted %s documents...", len(docs))
             if docs:
                 document.content = "\n\n".join(doc.text for doc in docs)
-                document.embedding = self.embed_model.get_text_embedding(document.content)
+                document.embedding = self.embed_model.get_text_embedding(
+                    document.content
+                )
                 document.status = DocumentStatus.PROCESSED.value
                 document.updated_at = datetime.now()
             else:
@@ -73,7 +80,9 @@ class DocumentProcessor:
 
             self.db.commit()
             self.db.refresh(document)
-            self.logger.info("Successfully completed processing file: %s", document.title)
+            self.logger.info(
+                "Successfully completed processing file: %s", document.title
+            )
 
         except Exception as e:
             document.status = DocumentStatus.FAILED.value
@@ -87,7 +96,9 @@ class DocumentProcessor:
                 shutil.rmtree(download_dir)
                 self.logger.info("Successfully cleaned up: %s", download_dir)
             except Exception as e:
-                self.logger.warning("Failed to remove directory %s: %s", download_dir, str(e))
+                self.logger.warning(
+                    "Failed to remove directory %s: %s", download_dir, str(e)
+                )
 
 
 def get_document_processor():

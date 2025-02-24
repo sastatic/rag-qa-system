@@ -1,11 +1,11 @@
 from test_base import TestBaseClass
 
-class TestQAEndpoints(TestBaseClass):
 
+class TestQAEndpoints(TestBaseClass):
     def test_get_answer_success(self):
         request_body = {
             "query": "What is this assignment about?",
-            "selected_document": ["01JMWC5FQM5NEGAM1T8M1A1N6V"]
+            "selected_document": ["01JMWC5FQM5NEGAM1T8M1A1N6V"],
         }
         response = self.client.post("/qa", json=request_body)
         assert response.status_code == 200
@@ -15,10 +15,7 @@ class TestQAEndpoints(TestBaseClass):
         assert data["answer"]
 
     def test_get_answer_no_documents(self):
-        request_body = {
-            "query": "Valid question",
-            "selected_document": []
-        }
+        request_body = {"query": "Valid question", "selected_document": []}
         response = self.client.post("/qa", json=request_body)
         assert response.status_code == 404
 
@@ -34,12 +31,12 @@ class TestQAEndpoints(TestBaseClass):
     def test_get_answer_invalid_document_id(self):
         request_body = {
             "query": "Any question",
-            "selected_document": ["fake_doc_id_123"]
+            "selected_document": ["fake_doc_id_123"],
         }
         response = self.client.post("/qa", json=request_body)
         assert response.status_code == 404
 
     def test_get_answer_empty_query(self):
-        request_body = { "query": "" }
+        request_body = {"query": ""}
         response = self.client.post("/qa", json=request_body)
         assert response.status_code == 422
