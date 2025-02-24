@@ -12,11 +12,11 @@ import json
 
 logger = get_logger(__name__)
 s3_client = create_s3_client()
-redis_client = Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 
 class DocumentService:
     def __init__(self, db: Session):
         self.repository = DocumentRepository(db)
+        self.redis_client = Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 
     async def validate_file(self, file):
         if file.content_type not in ["application/pdf", "text/plain"]:
@@ -42,7 +42,7 @@ class DocumentService:
             "file_name": doc.title,
         }
         message = json.dumps({'document_id': doc.id})
-        await redis_client.publish("document_processing", message)
+        await self.redis_client.publish("document_processing", message)
         logger.info("Published document %s to Redis channel for processing", doc.id)
         return uploaded_file
 

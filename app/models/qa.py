@@ -1,10 +1,10 @@
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, Field
+from typing import List
 
 
 class Question(BaseModel):
-    query: str
-    selected_document: Optional[List[str]] = []
+    query: str = Field(..., min_length=1)
+    selected_document: List[str]|None = None
 
 
 class Answer(BaseModel):
