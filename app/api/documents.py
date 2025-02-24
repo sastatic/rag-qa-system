@@ -1,6 +1,6 @@
 # app/api/documents.py
 
-from fastapi import APIRouter, UploadFile, File, Depends, Form
+from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from database.session import get_db
@@ -19,7 +19,6 @@ async def ingest_document(
     service: DocumentService = Depends(get_document_service)
 ):
     return await service.ingest_documents(files, callback_url)
-
 
 @router.get("/", summary="Get all documents")
 async def get_all_documents(db: Session = Depends(get_db)) -> List[dict]:
