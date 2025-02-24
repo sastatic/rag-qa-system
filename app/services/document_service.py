@@ -1,5 +1,6 @@
 # app/services/document_service.py
-import os, shutil
+import os
+import shutil
 from fastapi import HTTPException
 from database import create_s3_client
 from repositories.document_repository import DocumentRepository
