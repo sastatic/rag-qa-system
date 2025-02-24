@@ -10,8 +10,8 @@ RUN apt-get update && \
 
 # Copy dependency configuration and install the project
 COPY app/pyproject.toml .
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir .
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir .
 
 # Expose the port your app will run on
 EXPOSE 8000

@@ -4,7 +4,6 @@ import os
 import shutil
 import httpx
 from datetime import datetime
-from typing import Optional
 from llama_index.core.embeddings import resolve_embed_model
 from llama_parse import LlamaParse
 from llama_index.core import SimpleDirectoryReader
@@ -47,7 +46,8 @@ class DocumentProcessor:
                 self.logger.error("Failed to send webhook notification: %s", str(e))
 
     async def process_document(self, document_id: str):
-        document: Optional[Document] = self.document_repo.get_document_by_id(document_id)
+        logger.info("Started processing document...")
+        document: Document | None = self.document_repo.get_document_by_id(document_id)
         if not document:
             self.logger.exception("document_id: %s not found", document_id)
             return
@@ -57,29 +57,19 @@ class DocumentProcessor:
         file_path = os.path.join(download_dir, document.title)
 
         try:
-            # Download file from S3. (Note: This remains synchronous; consider using an executor if needed.)
             with open(file_path, "wb") as f:
                 self.s3_client.download_fileobj(BUCKET_RAGQA, document.s3_key, f)
-
-            # Use the file extension to choose a parser via our extractor strategy.
-            ext = os.path.splitext(document.title)[1].lower()
-            parser = self.file_extractor.get(ext)
-            if parser is None:
-                self.logger.error("No parser found for extension: %s", ext)
-                document.status = DocumentStatus.FAILED.value
+            reader = SimpleDirectoryReader(download_dir, file_extractor=self.file_extractor)
+            docs = await reader.aload_data()
+            logger.info("Downloaded and extracted %s documents...", len(docs))
+            if docs:
+                document.content = "\n\n".join(doc.text for doc in docs)
+                document.embedding = self.embed_model.get_text_embedding(document.content)
+                document.status = DocumentStatus.PROCESSED.value
+                document.updated_at = datetime.now()
             else:
-                # Process the document.
-                reader = SimpleDirectoryReader(download_dir)
-                docs = reader.load_data(show_progress=True)
-                if docs:
-                    doc = docs[0]
-                    document.content = doc.text
-                    document.embedding = self.embed_model.get_text_embedding(document.content)
-                    document.status = DocumentStatus.PROCESSED.value
-                    document.updated_at = datetime.utcnow()
-                else:
-                    self.logger.error("No document data extracted.")
-                    document.status = DocumentStatus.FAILED.value
+                self.logger.error("No document data extracted.")
+                document.status = DocumentStatus.FAILED.value
 
             self.db.commit()
             self.db.refresh(document)
@@ -87,7 +77,7 @@ class DocumentProcessor:
 
         except Exception as e:
             document.status = DocumentStatus.FAILED.value
-            document.updated_at = datetime.utcnow()
+            document.updated_at = datetime.now()
             self.db.commit()
             self.logger.error("Error processing file %s: %s", document.title, str(e))
 
