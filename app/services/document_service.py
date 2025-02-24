@@ -45,12 +45,15 @@ class DocumentService:
                 _, s3_key = await self.process_and_upload(file, request_id, uploads_dir)
                 logger.info("Uploaded file to S3: %s", file.filename)
                 doc = self.repository.create_document(file.filename, s3_key, callback_url)
-                uploaded_files.append(s3_key)
+                uploaded_files.append({
+                    'id': doc.id,
+                    "file_name": doc.title,
+                })
                 message = json.dumps({'document_id': doc.id})
                 await redis_client.publish("document_processing", message)
                 logger.info("Published document %s to Redis channel for processing", doc.id)
             self.repository.commit()
-            return request_id, uploaded_files
+            return uploaded_files
         except Exception as e:
             logger.error("Error in document ingestion: %s", str(e))
             raise HTTPException(status_code=500, detail=str(e))

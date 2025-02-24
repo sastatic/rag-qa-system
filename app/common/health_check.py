@@ -39,7 +39,6 @@ class ServiceHealthChecker:
     async def pull_model(self, model_name: str):
         async with httpx.AsyncClient() as client:
             try:
-                logger.info(f"Checking for model '{model_name}'")
                 response = await client.get(f"{self.ollama_url}/api/tags")
                 response.raise_for_status()
                 data = response.json()

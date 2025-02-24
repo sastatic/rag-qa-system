@@ -18,12 +18,8 @@ async def ingest_document(
     callback_url: Optional[str] = Form(None),
     service: DocumentService = Depends(get_document_service)
 ):
-    request_id, uploaded_files = await service.ingest_documents(files, callback_url)
-    return {
-        "request_id": request_id,
-        "message": f"Successfully queued {len(files)} documents for processing",
-        "files": uploaded_files,
-    }
+    return await service.ingest_documents(files, callback_url)
+
 
 @router.get("/", summary="Get all documents")
 async def get_all_documents(db: Session = Depends(get_db)) -> List[dict]:
