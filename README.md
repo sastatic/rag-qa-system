@@ -1,3 +1,6 @@
+## Diagrams
+Please refer to the  [app/README.md](app/README.md) file for diagrams and architectural details.
+
 ## Deployment
 
 This section provides step-by-step instructions to deploy the application locally or in a production-like environment using Docker. The deployment process ensures that all services—from the Document Ingestion API to the RAG-based Q&A service—are containerized, making the solution portable and scalable.
