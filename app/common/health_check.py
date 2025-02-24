@@ -4,14 +4,14 @@ import asyncio
 import httpx
 from redis.asyncio import Redis
 from common import get_logger
-from common.config import OLLAMA_URL, REDIS_URL, OLLAMA_MODEL
+from common.config import OLLAMA_HOST, REDIS_URL, OLLAMA_MODEL
 
 logger = get_logger(__name__)
 
 class ServiceHealthChecker:
     def __init__(self):
         self.redis_client = Redis.from_url(REDIS_URL, decode_responses=True)
-        self.ollama_url = OLLAMA_URL
+        self.OLLAMA_HOST = OLLAMA_HOST
 
     async def wait_for_redis(self):
         while True:
@@ -27,7 +27,7 @@ class ServiceHealthChecker:
         while True:
             try:
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(f"{self.ollama_url}/api/tags")
+                    response = await client.get(f"{self.OLLAMA_HOST}/api/tags")
                     if response.status_code == 200:
                         logger.info("Ollama is ready.")
                         return
@@ -39,7 +39,7 @@ class ServiceHealthChecker:
     async def pull_model(self, model_name: str):
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.get(f"{self.ollama_url}/api/tags")
+                response = await client.get(f"{self.OLLAMA_HOST}/api/tags")
                 response.raise_for_status()
                 data = response.json()
                 models = data.get("models", [])
@@ -55,7 +55,7 @@ class ServiceHealthChecker:
             headers = {"Content-Type": "application/json"}
             
             while True:
-                response = await client.post(f"{self.ollama_url}/api/pull", json=payload, headers=headers)
+                response = await client.post(f"{self.OLLAMA_HOST}/api/pull", json=payload, headers=headers)
                 if response.status_code == 200 and '"status":"success"' in response.text:
                     logger.info(f"Model '{model_name}' pulled successfully.")
                     return

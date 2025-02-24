@@ -14,7 +14,7 @@ wheels/
 .venv
 
 # Secrets
-.env
+.env*
 
 # Some useful directories
 pgdata/

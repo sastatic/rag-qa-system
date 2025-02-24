@@ -15,8 +15,7 @@ class DocumentRepository:
 
     def get_all_documents(self, document_ids: List|None= None):
         base_query = self.db.query(Document)
-        if document_ids:
-            base_query = base_query.filter(Document.id.in_(document_ids))
+        base_query = base_query.filter(Document.id.in_(document_ids))
         return base_query.all()
 
     def get_document_by_id(self, document_id):
