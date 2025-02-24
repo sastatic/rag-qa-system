@@ -41,10 +41,13 @@ class DocumentService:
             'id': doc.id,
             "file_name": doc.title,
         }
-        message = json.dumps({'document_id': doc.id})
-        await self.redis_client.publish("document_processing", message)
-        logger.info("Published document %s to Redis channel for processing", doc.id)
         return uploaded_file
+
+    async def trigger_processing_event(self, documents):
+        for doc in documents:
+            message = json.dumps({'document_id': doc["id"]})
+            await self.redis_client.publish("document_processing", message)
+            logger.info("Published document %s to Redis channel for processing", doc["id"])
 
     async def ingest_documents(self, files, callback_url: str = None):
         request_id = str(ULID())
@@ -58,6 +61,7 @@ class DocumentService:
                 uploaded_file = await self.ingest_document(file, request_id, uploads_dir, callback_url)
                 uploaded_files.append(uploaded_file)
             self.repository.commit()
+            await self.trigger_processing_event(uploaded_files)
             return uploaded_files
         except Exception as e:
             logger.error("Error in document ingestion: %s", str(e))
