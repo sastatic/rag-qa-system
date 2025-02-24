@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from llama_index.core.embeddings import resolve_embed_model
 from llama_index.llms.ollama import Ollama
 from common.config import OLLAMA_MODEL, EMBED_MODEL
-from database.models.document import Document
 from models.qa import Question, Answer
 from repositories.document_repository import DocumentRepository
 from common import get_logger
@@ -38,17 +37,20 @@ class QAService:
         query_embedding = self.embed_model.get_text_embedding(query_text)
         # Fetch documents using the repository; you can also use self.db directly if preferred.
         documents = self.document_repo.get_all_documents(document_ids)
+        logger.info("%s documents found.", len(documents))
         if not documents:
             return []
         doc_scores = []
         for doc in documents:
             if doc.embedding is None:
+                logger.info("Doc embedding is none here.")
                 continue 
             similarity = np.dot(doc.embedding, query_embedding)
             doc_scores.append((similarity, doc))
         doc_scores.sort(reverse=True, key=lambda x: x[0])
-        return [doc for _, doc in doc_scores[:top_n]]
-    
+        doc_scores_slice = [doc for _, doc in doc_scores[:top_n]]
+        return doc_scores_slice
+
     async def generate_answer(self, question: Question) -> Answer:
         logger.info("Generating answer for question: %s", question.query)
         relevant_docs = await self.search_within_documents(question.query, question.selected_document)
