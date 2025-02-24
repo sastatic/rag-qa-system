@@ -8,6 +8,7 @@ from common.config import OLLAMA_HOST, REDIS_URL, OLLAMA_MODEL
 
 logger = get_logger(__name__)
 
+
 class ServiceHealthChecker:
     def __init__(self):
         self.redis_client = Redis.from_url(REDIS_URL, decode_responses=True)
@@ -35,7 +36,6 @@ class ServiceHealthChecker:
                 logger.info("Waiting for Ollama to be ready...")
             await asyncio.sleep(1)
 
-
     async def pull_model(self, model_name: str):
         async with httpx.AsyncClient() as client:
             try:
@@ -49,14 +49,22 @@ class ServiceHealthChecker:
                     logger.info(f"Model '{model_name}' is already loaded.")
                     return
             except Exception as e:
-                logger.info("Could not verify model list; proceeding to pull model. Error: %s", e)
+                logger.info(
+                    "Could not verify model list; proceeding to pull model. Error: %s",
+                    e,
+                )
 
             payload = {"name": model_name}
             headers = {"Content-Type": "application/json"}
-            
+
             while True:
-                response = await client.post(f"{self.OLLAMA_HOST}/api/pull", json=payload, headers=headers)
-                if response.status_code == 200 and '"status":"success"' in response.text:
+                response = await client.post(
+                    f"{self.OLLAMA_HOST}/api/pull", json=payload, headers=headers
+                )
+                if (
+                    response.status_code == 200
+                    and '"status":"success"' in response.text
+                ):
                     logger.info(f"Model '{model_name}' pulled successfully.")
                     return
                 else:

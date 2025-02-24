@@ -5,14 +5,17 @@ from services.document_processor import get_document_processor
 from common import get_logger
 from common.config import REDIS_HOST, REDIS_PORT
 
+
 class DocumentWorker:
     def __init__(self):
-        self.logger = get_logger('worker')
-        self.redis_client = Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
+        self.logger = get_logger("worker")
+        self.redis_client = Redis(
+            host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True
+        )
         self.pubsub = self.redis_client.pubsub()
         self.document_processor = get_document_processor()
-        self.channel="document_processing"
-        self.poll_interval=0.1
+        self.channel = "document_processing"
+        self.poll_interval = 0.1
 
     async def decode_message(self, message):
         try:
@@ -40,7 +43,9 @@ class DocumentWorker:
         await self.pubsub.subscribe(self.channel)
         self.logger.info("Subscribed to channel: %s", self.channel)
         while True:
-            message = await self.pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+            message = await self.pubsub.get_message(
+                ignore_subscribe_messages=True, timeout=1.0
+            )
             if message:
                 await self.process_message(message)
             await asyncio.sleep(self.poll_interval)
@@ -57,6 +62,7 @@ class DocumentWorker:
         finally:
             await self.shutdown()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     worker = DocumentWorker()
     asyncio.run(worker.run())

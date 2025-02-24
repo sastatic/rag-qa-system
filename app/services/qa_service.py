@@ -23,6 +23,7 @@ Question: {query_text}
 Answer:
 """
 
+
 class QAService:
     def __init__(self, db: Session):
         self.db = db
@@ -33,8 +34,10 @@ class QAService:
             request_timeout=60.0,
             base_url=os.getenv("OLLAMA_HOST", "http://localhost:11434"),
         )
-    
-    async def search_within_documents(self, query_text: str, document_ids: list, top_n: int = 10):
+
+    async def search_within_documents(
+        self, query_text: str, document_ids: list, top_n: int = 10
+    ):
         query_embedding = self.embed_model.get_text_embedding(query_text)
         # Fetch documents using the repository; you can also use self.db directly if preferred.
         documents = self.document_repo.get_all_documents(document_ids)
@@ -45,7 +48,7 @@ class QAService:
         for doc in documents:
             if doc.embedding is None:
                 logger.info("Doc embedding is none here.")
-                continue 
+                continue
             similarity = np.dot(doc.embedding, query_embedding)
             doc_scores.append((similarity, doc))
         doc_scores.sort(reverse=True, key=lambda x: x[0])
@@ -53,10 +56,19 @@ class QAService:
         return doc_scores_slice
 
     async def get_context(self, question: Question):
-        relevant_docs = await self.search_within_documents(question.query, question.selected_document)
+        relevant_docs = await self.search_within_documents(
+            question.query, question.selected_document
+        )
         if not relevant_docs:
-            raise HTTPException(status_code=404, detail={"message": "No relevant information found in the selected documents."})
-        return "\n\n".join([f"{doc.title}:\n{doc.content[:1000]}" for doc in relevant_docs])
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "message": "No relevant information found in the selected documents."
+                },
+            )
+        return "\n\n".join(
+            [f"{doc.title}:\n{doc.content[:1000]}" for doc in relevant_docs]
+        )
 
     async def generate_answer(self, question: Question) -> Answer:
         logger.info("Generating answer for question: %s", question.query)
@@ -68,5 +80,10 @@ class QAService:
             response_text = self.llm.complete(new_prompt).text  # synchronous call
         except Exception as e:
             logger.error("LLM call failed or timed out: %s", str(e))
-            raise HTTPException(status_code=400, detail={"message": "An error occurred while generating an answer. Please try again later."})
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "An error occurred while generating an answer. Please try again later."
+                },
+            )
         return Answer(answer=response_text)
